@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navegador EBD | A Igreja</title>
+    
+    <!-- FONTES DO GOOGLE -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- BIBLIOTECAS DE ÍCONES E SOM -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    
+    <style>
+        :root {
+            --cor-netflix-vermelho: #E50914;
+            --cor-netflix-preto: #141414;
+            --cor-netflix-cinza-escuro: #222;
+            --cor-netflix-cinza-claro: #e5e5e5;
+            --cor-texto-principal: #ffffff;
+            --cor-texto-secundario: #a0a0a0;
+            
+            --fonte-titulo: 'Bebas Neue', sans-serif;
+            --fonte-texto: 'Roboto', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--cor-netflix-preto);
+            color: var(--cor-texto-principal);
+            font-family: var(--fonte-texto);
+            overflow: hidden; /* Prevenir scroll durante splash */
+        }
+
+        /* --- TELAS DE SPLASH --- */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            cursor: pointer;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #splash-logo-view .splash-logo {
+            font-family: var(--fonte-titulo);
+            font-size: 6rem;
+            color: var(--cor-netflix-vermelho);
+            letter-spacing: 4px;
+        }
+
+        #splash-tudum-view {
+            background-color: #000;
+        }
+        
+        .tudum-letter {
+            font-family: var(--fonte-titulo);
+            font-size: 40vw;
+            color: var(--cor-netflix-vermelho);
+            transform: scale(0.8);
+            opacity: 0;
+            text-shadow: 0 0 10px #000, 0 0 30px #000, 0 0 50px #000;
+        }
+
+        .tudum-letter.animate {
+            animation: tudum-animation 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        @keyframes tudum-animation {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            40% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* --- ESTRUTURA PRINCIPAL --- */
+        #app-container {
+            width: 100%;
+            min-height: 100vh;
+            display: none; /* Inicia oculto */
+        }
+
+        .view {
+            width: 100%;
+            min-height: 100vh;
+            display: none;
+            flex-direction: column;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* --- TELA DE NAVEGAÇÃO (CATÁLOGO) --- */
+        #browse-view header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px 50px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(20, 20, 20, 0.8) 0%, rgba(20, 20, 20, 0) 100%);
+            transition: background-color 0.3s ease;
+        }
+        #browse-view header.scrolled {
+            background-color: var(--cor-netflix-preto);
+        }
+        .logo {
+            font-family: var(--fonte-titulo);
+            font-size: 2.5rem;
+            color: var(--cor-netflix-vermelho);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .logo span {
+            font-size: 1rem;
+            color: var(--cor-texto-principal);
+            letter-spacing: 1px;
+            font-family: var(--fonte-texto);
+            font-weight: 500;
+        }
+
+        .hero-section {
+            width: 100%;
+            height: 90vh;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding-left: 50px;
+        }
+        .hero-section::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, rgba(20, 20, 20, 1) 10%, rgba(20, 20, 20, 0.6) 50%, rgba(20, 20, 20, 0) 100%);
+        }
+        .hero-content {
+            z-index: 10;
+            max-width: 50%;
+        }
+        .hero-content h1 {
+            font-family: var(--fonte-titulo);
+            font-size: 5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        .hero-content p {
+            font-size: 1.2rem;
+            line-height: 1.5;
+            margin-top: 15px;
+            max-width: 600px;
+            color: var(--cor-netflix-cinza-claro);
+        }
+        .hero-buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+        }
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.2s ease;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        .btn-primary {
+            background-color: var(--cor-texto-principal);
+            color: var(--cor-netflix-preto);
+        }
+        .btn-secondary {
+            background-color: rgba(109, 109, 110, 0.7);
+            color: var(--cor-texto-principal);
+        }
+
+        .catalog-container {
+            padding: 0 0 50px 50px;
+            margin-top: -150px;
+            position: relative;
+            z-index: 20;
+        }
+        .topic-row {
+            margin-bottom: 40px;
+        }
+        .row-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        .row-content {
+            display: flex;
+            overflow-x: auto;
+            overflow-y: hidden;
+            gap: 10px;
+            padding-bottom: 20px; /* Espaço para a barra de rolagem não sobrepor o conteúdo */
+        }
+        /* Custom scrollbar */
+        .row-content::-webkit-scrollbar {
+            height: 8px;
+        }
+        .row-content::-webkit-scrollbar-track {
+            background: var(--cor-netflix-cinza-escuro);
+            border-radius: 10px;
+        }
+        .row-content::-webkit-scrollbar-thumb {
+            background: var(--cor-netflix-vermelho);
+            border-radius: 10px;
+        }
+
+        .topic-card {
+            flex: 0 0 280px;
+            height: 160px;
+            background-color: var(--cor-netflix-cinza-escuro);
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-size: cover;
+            background-position: center;
+        }
+        .topic-card:hover {
+            transform: scale(1.1);
+            z-index: 50;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .card-overlay {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(0deg, rgba(20, 20, 20, 0.9) 0%, rgba(20, 20, 20, 0) 50%);
+            display: flex;
+            align-items: flex-end;
+            padding: 15px;
+        }
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        
+        /* --- TELA DE DETALHES --- */
+        #detail-view {
+            padding: 50px;
+            background-color: var(--cor-netflix-preto);
+        }
+        .back-button {
+            background: none;
+            border: none;
+            color: var(--cor-texto-principal);
+            font-size: 2.5rem;
+            cursor: pointer;
+            margin-bottom: 30px;
+            transition: color 0.2s ease;
+        }
+        .back-button:hover {
+            color: var(--cor-netflix-vermelho);
+        }
+
+        .detail-content {
+            max-width: 900px;
+            margin: 0 auto;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Estilos para o conteúdo do slide adaptado para o tema escuro */
+        .detail-content h2 {
+            font-family: var(--fonte-titulo);
+            font-size: 3rem;
+            color: var(--cor-texto-principal);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--cor-netflix-vermelho);
+        }
+        .detail-content p, .detail-content li {
+            font-size: 1.2rem;
+            line-height: 1.7;
+            color: var(--cor-netflix-cinza-claro);
+            margin-bottom: 15px;
+        }
+        .detail-content blockquote {
+            font-family: 'Merriweather', serif;
+            font-style: italic;
+            border-left: 4px solid var(--cor-netflix-vermelho);
+            padding: 15px 25px;
+            margin: 25px 0;
+            font-size: 1.3rem;
+            color: #ccc;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 0 8px 8px 0;
+        }
+        .detail-content blockquote footer {
+            text-align: right;
+            font-weight: bold;
+            font-style: normal;
+            font-size: 0.9em;
+            margin-top: 10px;
+            color: var(--cor-texto-secundario);
+        }
+        .detail-content .citation-explanation {
+            font-size: 1.1rem !important;
+            font-style: italic;
+            color: var(--cor-texto-secundario);
+            margin-top: -10px;
+            margin-left: 20px;
+        }
+        .detail-content .card-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            margin: 20px 0;
+        }
+        .detail-content .card {
+            background-color: var(--cor-netflix-cinza-escuro);
+            border-radius: 10px;
+            padding: 25px;
+            flex: 1;
+        }
+        .detail-content .card-icon {
+            font-size: 3rem;
+            color: var(--cor-netflix-vermelho);
+            margin-bottom: 15px;
+        }
+        .detail-content .card h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: var(--cor-texto-principal);
+        }
+        .detail-content .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+        .detail-content .timeline-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background-color: var(--cor-netflix-cinza-escuro);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--cor-netflix-vermelho);
+        }
+        .detail-content .timeline-icon {
+            font-size: 2.8rem;
+            color: var(--cor-texto-principal);
+        }
+        .detail-content .timeline-content h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        .detail-content .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .detail-content .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .detail-content .comparison-table th, .detail-content .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        .detail-content .comparison-table th {
+            background-color: var(--cor-netflix-vermelho);
+            color: var(--cor-texto-principal);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.4rem;
+        }
+        .detail-content .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+        .detail-content ul {
+            padding-left: 25px;
+        }
+        
+        /* --- RESPONSIVIDADE --- */
+        @media (max-width: 768px) {
+            #splash-logo-view .splash-logo { font-size: 4rem; }
+
+            #browse-view header { padding: 15px 20px; }
+            .logo { font-size: 2rem; }
+            
+            .hero-section { padding-left: 20px; height: 70vh; }
+            .hero-content { max-width: 80%; }
+            .hero-content h1 { font-size: 3.5rem; }
+            .hero-content p { font-size: 1rem; }
+
+            .catalog-container { padding: 0 0 20px 20px; margin-top: -100px; }
+            .row-title { font-size: 1.4rem; }
+            .topic-card { flex: 0 0 220px; height: 125px; }
+
+            #detail-view { padding: 20px; }
+            .detail-content h2 { font-size: 2.2rem; }
+            .detail-content p, .detail-content li { font-size: 1rem; }
+            .detail-content .card-container { flex-direction: column; }
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- TELAS DE SPLASH -->
+<div id="splash-logo-view" class="splash-screen">
+    <h1 class="splash-logo">EBDFLIX</h1>
+</div>
+<div id="splash-tudum-view" class="splash-screen" style="display: none;">
+    <div id="tudum-letter" class="tudum-letter">E</div>
+</div>
+
+
+<div id="app-container">
+    <!-- TELA DE NAVEGAÇÃO (CATÁLOGO) -->
+    <div id="browse-view" class="view">
+        <header id="main-header">
+            <div class="logo">EBD <span>Flix</span></div>
+        </header>
+
+        <section class="hero-section" style="background-image: url('https://placehold.co/1920x1080/141414/E50914?text=EBD&font=bebas-neue');">
+            <div class="hero-content">
+                <h1>O Discípulo e a Igreja</h1>
+                <p>Uma jornada pela Eclesiologia Reformada, explorando a natureza, o fundamento e a missão do povo de Deus através das Escrituras.</p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary" id="start-journey-btn"><i class="ph-bold ph-play"></i> Iniciar Jornada</button>
+                    <button class="btn btn-secondary" id="more-info-btn"><i class="ph-bold ph-info"></i> Mais Infos</button>
+                </div>
+            </div>
+        </section>
+
+        <main class="catalog-container">
+            <!-- As linhas de tópicos serão injetadas aqui pelo JS -->
+        </main>
+    </div>
+
+    <!-- TELA DE DETALHES DO TÓPICO -->
+    <div id="detail-view" class="view">
+        <button class="back-button" id="back-to-browse-btn" title="Voltar ao Catálogo">
+            <i class="ph-bold ph-arrow-left"></i>
+        </button>
+        <div id="detail-content-container" class="detail-content">
+            <!-- O conteúdo do slide será injetado aqui pelo JS -->
+        </div>
+    </div>
+</div>
+
+<!-- Conteúdo original da apresentação, oculto para parsing -->
+<div id="original-content" style="display:none;">
+    <!-- SLIDE 1: Capa (Usado no Hero) -->
+    <section class="slide" data-title="O Discípulo e a Igreja" data-category="Destaque">
+        <div class="slide-content">
+            <h1>O Discípulo e a Igreja</h1>
+            <p>Uma jornada pela Eclesiologia Reformada, explorando a natureza, o fundamento e a missão do povo de Deus através das Escrituras.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 5: Etimologia -->
+    <section class="slide" data-title="Etimologia de 'Igreja'" data-category="Originais da EBD" data-img="https://placehold.co/560x320/007fc6/FFFFFF?text=Etimologia">
+        <div class="slide-content">
+            <h2>A Origem da Palavra "Igreja"</h2>
+            <div class="card-container">
+                <div class="card">
+                    <h3>Novo Testamento (Grego)</h3>
+                    <p>A palavra é <strong>ἐκκλησία (Ekklesia)</strong>. Vem de `Ek` (para fora) + `Kaleo` (chamar), significando "os chamados para fora". No mundo greco-romano, designava uma assembleia de cidadãos convocados.</p>
+                    <blockquote><p>...será decidida em assembleia regular (en te ennomo ekklesia).</p><footer>Atos 19:39 (ARA)</footer></blockquote>
+                </div>
+                <div class="card">
+                    <h3>Antigo Testamento (Hebraico)</h3>
+                    <p>Na Septuaginta (LXX), `Ekklesia` traduz o hebraico <strong>קָהָל (Qahal)</strong>, que significa a "assembleia" ou "congregação" do povo de Israel convocado por Deus. A Igreja do NT herda este rico conceito.</p>
+                    <blockquote><p>Nenhum amonita ou moabita entrará na assembleia do SENHOR (Qahal YHWH)...</p><footer>Deuteronômio 23:3 (ARA)</footer></blockquote>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 6: Sentido 1 -->
+    <section class="slide" data-title="Sentido 1: Corpo Total dos Fiéis" data-category="Originais da EBD" data-img="https://placehold.co/560x320/1e52ef/FFFFFF?text=Corpo+Total">
+        <div class="slide-content">
+            <h2>1. O Corpo Total dos Fiéis</h2>
+            <p>Este é o sentido mais amplo: a <strong>Igreja Invisível e Universal</strong>. Refere-se ao corpo completo de todos os eleitos que foram, são ou serão unidos a Cristo.</p>
+            <blockquote>
+                <p>...para a apresentar a si mesmo igreja gloriosa, sem mácula, nem ruga... porém santa e sem defeito.</p>
+                <footer>Efésios 5:27 (ARA)</footer>
+            </blockquote>
+            <p class="citation-explanation">Esta perfeição absoluta não pode se referir a nenhuma igreja local, mas apenas ao corpo total dos salvos, como Deus os vê em Cristo.</p>
+             <blockquote>
+                <p>...sobre esta pedra edificarei a minha igreja, e as portas do inferno não prevalecerão contra ela.</p>
+                <footer>Mateus 16:18 (ARA)</footer>
+            </blockquote>
+            <p class="citation-explanation">A promessa de indestrutibilidade foi dada à Igreja universal, não a uma congregação específica, que pode deixar de existir.</p>
+        </div>
+    </section>
+    
+    <!-- SLIDE 7: Sentido 2 -->
+    <section class="slide" data-title="Sentido 2: Os Professos no Mundo" data-category="Originais da EBD" data-img="https://placehold.co/560x320/eb580b/FFFFFF?text=Professos">
+        <div class="slide-content">
+            <h2>2. Os Professos no Mundo</h2>
+            <p>Este é o sentido da <strong>Igreja Visível e Universal</strong>. Consiste em todos aqueles que, em todo o mundo, professam a fé em Cristo, juntamente com seus filhos. É o "reino dos céus" que contém tanto o trigo quanto o joio.</p>
+            <blockquote>
+                <p>A uns estabeleceu Deus na igreja, primeiramente, apóstolos; em segundo lugar, profetas; em terceiro lugar, mestres...</p>
+                <footer>1 Coríntios 12:28 (ARA)</footer>
+            </blockquote>
+            <p class="citation-explanation">A lista de ofícios (apóstolos, profetas) refere-se à estrutura organizacional e visível da Igreja na terra.</p>
+             <blockquote>
+                 <p>Enquanto isso, acrescentava-lhes o Senhor, dia a dia, os que iam sendo salvos.</p>
+                <footer>Atos 2:47 (ARA)</footer>
+            </blockquote>
+            <p class="citation-explanation">O acréscimo diário de pessoas era um evento público e observável, referindo-se à comunidade visível dos crentes.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 8: Sentido 3 -->
+    <section class="slide" data-title="Sentido 3: A Congregação Local" data-category="Originais da EBD" data-img="https://placehold.co/560x320/f7b801/000000?text=Congregação">
+        <div class="slide-content">
+            <h2>3. A Congregação Local</h2>
+            <p>A palavra "igreja" é frequentemente usada para designar um grupo de crentes em um lugar específico, que se reúne para adorar a Deus, mesmo que em número reduzido ou em uma residência particular.</p>
+            <blockquote>
+                <p>Saudai Priscila e Áquila... saudai igualmente a igreja que se reúne na casa deles.</p>
+                <footer>Romanos 16:3, 5 (ARA)</footer>
+            </blockquote>
+             <blockquote>
+                 <p>As igrejas da Ásia vos saúdam... bem assim, a igreja que está na casa deles.</p>
+                <footer>1 Coríntios 16:19 (ARA)</footer>
+            </blockquote>
+        </div>
+    </section>
+
+    <!-- SLIDE 9: Sentido 4 -->
+    <section class="slide" data-title="Sentido 4: Congregações Associadas" data-category="Originais da EBD" data-img="https://placehold.co/560x320/4a4a4a/FFFFFF?text=Associadas">
+        <div class="slide-content">
+            <h2>4. Congregações Associadas</h2>
+            <p>O termo também se aplica a um conjunto de congregações locais, geograficamente próximas, que estão ligadas sob um governo eclesiástico comum, formando uma unidade maior.</p>
+            <p>O exemplo clássico é "a igreja em Jerusalém", que, segundo Atos, tinha dezenas de milhares de membros, um número impossível de se reunir em um único local de culto.</p>
+            <blockquote>
+                <p>Bem vês, irmão, quantas dezenas de milhares há entre os judeus que creram...</p>
+                <footer>Atos 21:20 (ARA)</footer>
+            </blockquote>
+        </div>
+    </section>
+
+    <!-- SLIDE 10: Sentido 5 -->
+    <section class="slide" data-title="Sentido 5: Os Representantes da Igreja" data-category="Originais da EBD" data-img="https://placehold.co/560x320/007fc6/FFFFFF?text=Representantes">
+        <div class="slide-content">
+            <h2>5. Os Representantes da Igreja</h2>
+            <p>Devido ao princípio da representação, a palavra "igreja" pode se referir aos seus oficiais (presbíteros, pastores) que agem em nome do corpo de crentes, exercendo o governo e a disciplina.</p>
+            <p>Neste contexto de Mateus 18, "dizer à igreja" significa levar a questão ao tribunal de oficiais estabelecido para julgar tais causas, e não a toda a congregação.</p>
+            <blockquote>
+                <p>"Se ele não os atender, dize-o à <b>igreja</b>; e, se recusar ouvir também a <b>igreja</b>, considera-o como gentio e publicano."</p>
+                <footer>Mateus 18:17 (ARA)</footer>
+            </blockquote>
+        </div>
+    </section>
+
+    <!-- SLIDE 12: Origem Eterna -->
+    <section class="slide" data-title="A Origem Eterna da Igreja" data-category="Doutrinas em Destaque" data-img="https://placehold.co/560x320/1e52ef/FFFFFF?text=Plano+Eterno">
+        <div class="slide-content">
+            <h2>A Origem Eterna da Igreja</h2>
+            <p>A Igreja não é um acidente na história, mas uma parte central do plano eterno de Deus. Antes da criação do mundo, Deus já havia eleito em Cristo um povo para si, que constituiria a Sua Igreja.</p>
+            <blockquote>
+                <p>...assim como nos escolheu, nele, antes da fundação do mundo, para sermos santos e irrepreensíveis perante ele; e em amor nos predestinou para ele, para a adoção de filhos, por meio de Jesus Cristo...</p>
+                <footer>Efésios 1:4-5 (ARA)</footer>
+            </blockquote>
+            <p>Portanto, a existência da Igreja está fundamentada na vontade soberana e no decreto eterno de Deus.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 13: Origem no Éden -->
+    <section class="slide" data-title="A Igreja no Éden" data-category="Doutrinas em Destaque" data-img="https://placehold.co/560x320/eb580b/FFFFFF?text=Éden">
+        <div class="slide-content">
+            <h2>A Igreja no Éden (Pré-Queda)</h2>
+            <p>Na teologia pactual, o Jardim do Éden pode ser visto como o primeiro santuário, e Adão e Eva como a primeira congregação. Ali existiam elementos de uma igreja em estado probatório:</p>
+             <div class="card-container">
+                <div class="card">
+                    <i class="ph-bold ph-tree card-icon"></i>
+                    <h3>Sinais Sacramentais</h3>
+                    <p>A Árvore da Vida (selo da vida eterna) e a Árvore do Conhecimento (selo da prova da aliança).</p>
+                </div>
+                <div class="card">
+                    <i class="ph-bold ph-calendar-check card-icon"></i>
+                    <h3>Culto e Adoração</h3>
+                    <p>O Sábado como dia de descanso e comunhão especial com Deus, e o mandato de Adão como sacerdote-rei para "guardar" o jardim.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 14: Origem Redentiva -->
+    <section class="slide" data-title="A Igreja Redentiva no AT" data-category="Doutrinas em Destaque" data-img="https://placehold.co/560x320/f7b801/000000?text=Redenção">
+        <div class="slide-content">
+            <h2>A Igreja Redentiva no Antigo Testamento</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <i class="ph-bold ph-sparkle timeline-icon"></i>
+                    <div class="timeline-content">
+                        <h3>O Protoevangelho</h3>
+                        <p>Após a queda, Deus promete um Redentor (Gn 3:15), iniciando a história da Igreja como uma comunidade redimida, a linhagem da mulher.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <i class="ph-bold ph-users-three timeline-icon"></i>
+                    <div class="timeline-content">
+                        <h3>Os Patriarcas</h3>
+                        <p>A Igreja continua na linhagem de Sete, Noé e, especialmente, na aliança com Abraão (Gn 17:7), que formaliza um povo pactual visível.</p>
+                    </div>
+                </div>
+                 <div class="timeline-item">
+                    <i class="ph-bold ph-scroll timeline-icon"></i>
+                    <div class="timeline-content">
+                        <h3>Israel</h3>
+                        <p>Com Moisés, a Igreja assume uma forma nacional. Israel é a "congregação (ekklesia) no deserto" (At 7:38), com leis e culto que apontavam para Cristo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- SLIDE 17: Visível vs Invisível -->
+    <section class="slide" data-title="Visível vs. Invisível" data-category="Aplicações Práticas" data-img="https://placehold.co/560x320/4a4a4a/FFFFFF?text=Visível+Invisível">
+        <div class="slide-content">
+            <h2>A Dupla Característica da Igreja</h2>
+            <div class="table-wrapper">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Atributo</th>
+                            <th>Igreja Invisível</th>
+                            <th>Igreja Visível</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Composição</strong></td>
+                            <td>Apenas os eleitos ("trigo").</td>
+                            <td>Professos e seus filhos ("trigo e joio").</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Relação com Cristo</strong></td>
+                            <td>União interna, espiritual e salvífica.</td>
+                            <td>Relação externa, pactual e professa.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Visibilidade</strong></td>
+                            <td>Conhecida perfeitamente por Deus.</td>
+                            <td>Reconhecida pelos homens.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Natureza</strong></td>
+                            <td>Perfeita e santa aos olhos de Deus.</td>
+                            <td>Imperfeita e militante.</td>
+                        </tr>
+                         <tr>
+                            <td><strong>Referência</strong></td>
+                            <td>Efésios 5:27</td>
+                            <td>Mateus 13:47</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 20: Aplicações Finais -->
+    <section class="slide" data-title="Aplicações Finais" data-category="Aplicações Práticas" data-img="https://placehold.co/560x320/007fc6/FFFFFF?text=Aplicações">
+        <div class="slide-content">
+            <h2>Resumo e Aplicações Finais</h2>
+            <div class="card-container" style="flex-direction: column; gap: 15px;">
+                <div class="card">
+                    <h3><i class="ph-fill ph-church"></i> Valorize a Igreja Visível</h3>
+                    <p>Não despreze a comunhão local (Hb 10:25). É o ambiente ordenado por Deus para nosso crescimento, adoração e serviço. Um "cristão solitário" é uma contradição.</p>
+                </div>
+                <div class="card">
+                    <h3><i class="ph-fill ph-scales"></i> Tenha Discernimento e Paciência</h3>
+                    <p>Entenda que a igreja visível é mista (trigo e joio). Isso nos chama à paciência com as falhas dos irmãos e a buscar as marcas de uma igreja fiel.</p>
+                </div>
+                 <div class="card">
+                    <h3><i class="ph-fill ph-anchor-simple"></i> Descanse na Soberania de Deus</h3>
+                    <p>Apesar das falhas, a verdadeira Igreja está segura em Cristo. Ele a fundou, a sustenta e a preservará até o fim (Mt 16:18).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- SPLASH SCREEN LOGIC ---
+    const splashLogoView = document.getElementById('splash-logo-view');
+    const splashTudumView = document.getElementById('splash-tudum-view');
+    const tudumLetter = document.getElementById('tudum-letter');
+    const appContainer = document.getElementById('app-container');
+    const browseView = document.getElementById('browse-view');
+
+    // Sintetizador para o som "Tudum"
+    const synth = new Tone.Synth({
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
+    }).toDestination();
+
+    function playTudumSound() {
+        const now = Tone.now();
+        synth.triggerAttackRelease("A2", "8n", now);
+        synth.triggerAttackRelease("E3", "8n", now + 0.2);
+    }
+
+    splashLogoView.addEventListener('click', () => {
+        splashLogoView.style.opacity = '0';
+        splashTudumView.style.display = 'flex';
+        
+        setTimeout(() => {
+            splashLogoView.style.display = 'none';
+            tudumLetter.classList.add('animate');
+            // Iniciar o som um pouco depois do clique para sincronizar com a animação
+            Tone.start().then(() => {
+                playTudumSound();
+            });
+        }, 500); // Duração da transição de opacidade
+    });
+
+    splashTudumView.addEventListener('click', () => {
+        splashTudumView.style.opacity = '0';
+        
+        setTimeout(() => {
+            splashTudumView.style.display = 'none';
+            document.body.style.overflowY = 'auto'; // Habilita o scroll
+            appContainer.style.display = 'block';
+            browseView.classList.add('active');
+        }, 500); // Duração da transição de opacidade
+    });
+
+
+    // --- APP LOGIC ---
+    const detailView = document.getElementById('detail-view');
+    const catalogContainer = document.querySelector('.catalog-container');
+    const detailContentContainer = document.getElementById('detail-content-container');
+    const backBtn = document.getElementById('back-to-browse-btn');
+    const startJourneyBtn = document.getElementById('start-journey-btn');
+    const moreInfoBtn = document.getElementById('more-info-btn');
+    const mainHeader = document.getElementById('main-header');
+
+    let topicsData = [];
+    let categories = {};
+
+    function parseOriginalContent() {
+        const originalSlides = document.querySelectorAll('#original-content .slide');
+        originalSlides.forEach((slide, index) => {
+            const title = slide.dataset.title;
+            const category = slide.dataset.category;
+            const img = slide.dataset.img || `https://placehold.co/560x320/222222/FFFFFF?text=${encodeURIComponent(title)}`;
+            const content = slide.querySelector('.slide-content').innerHTML;
+            const topic = { id: index, title, category, img, content };
+            topicsData.push(topic);
+            if (category && category !== 'Destaque') {
+                if (!categories[category]) {
+                    categories[category] = [];
+                }
+                categories[category].push(topic);
+            }
+        });
+    }
+
+    function renderCatalog() {
+        catalogContainer.innerHTML = '';
+        for (const categoryName in categories) {
+            const row = document.createElement('div');
+            row.className = 'topic-row';
+            const rowTitle = document.createElement('h2');
+            rowTitle.className = 'row-title';
+            rowTitle.textContent = categoryName;
+            row.appendChild(rowTitle);
+            const rowContent = document.createElement('div');
+            rowContent.className = 'row-content';
+            categories[categoryName].forEach(topic => {
+                const card = document.createElement('div');
+                card.className = 'topic-card';
+                card.style.backgroundImage = `url('${topic.img}')`;
+                card.dataset.topicId = topic.id;
+                card.innerHTML = `<div class="card-overlay"><h3 class="card-title">${topic.title}</h3></div>`;
+                card.addEventListener('click', () => showTopicDetails(topic.id));
+                rowContent.appendChild(card);
+            });
+            row.appendChild(rowContent);
+            catalogContainer.appendChild(row);
+        }
+    }
+
+    function showTopicDetails(topicId) {
+        const topic = topicsData.find(t => t.id === topicId);
+        if (!topic) return;
+        detailContentContainer.innerHTML = topic.content;
+        browseView.classList.remove('active');
+        detailView.classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    function backToBrowse() {
+        detailView.classList.remove('active');
+        browseView.classList.add('active');
+        detailContentContainer.innerHTML = '';
+    }
+
+    function handleHeaderScroll() {
+        if (browseView.classList.contains('active')) {
+            if (window.scrollY > 50) {
+                mainHeader.classList.add('scrolled');
+            } else {
+                mainHeader.classList.remove('scrolled');
+            }
+        }
+    }
+
+    parseOriginalContent();
+    renderCatalog();
+
+    backBtn.addEventListener('click', backToBrowse);
+    startJourneyBtn.addEventListener('click', () => {
+        const firstTopicId = categories[Object.keys(categories)[0]][0].id;
+        showTopicDetails(firstTopicId);
+    });
+    moreInfoBtn.addEventListener('click', () => {
+        const etimologiaTopic = topicsData.find(t => t.title.includes("Etimologia"));
+        if (etimologiaTopic) {
+            showTopicDetails(etimologiaTopic.id);
+        }
+    });
+    
+    window.addEventListener('scroll', handleHeaderScroll);
+});
+</script>
+
+</body>
+</html>
